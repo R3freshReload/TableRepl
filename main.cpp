@@ -38,14 +38,7 @@ namespace table  {
             if (!input.empty() && name.empty()) {
                 selected = input;
             } else if(!name.empty()) {
-                std::cout << "DEBUG: " << name << " + " << input << std::endl;
-                auto& dest = tables[input];
-                for (const auto& row : tables[name].getData()) {
-                    for (const auto& data : row) {
-                        dest << data;
-                    }
-                    dest << std::row;
-                }
+                tables[input] << tables[name];
             }
         } else if (input.starts_with("#")) {
             t << std::row;

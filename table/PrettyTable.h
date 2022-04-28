@@ -15,11 +15,25 @@ namespace util {
             str += ' ';
         }
     }
+    struct row{};
 }
+
+namespace std {
+    constexpr util::row row;
+}
+
+class PrettyTable;
+
+class TableRow {
+private:
+    std::vector<std::string> data;
+public:
+    friend class PrettyTable;
+};
 
 class PrettyTable {
 private:
-    std::vector<std::vector<std::string>> rows;
+    std::vector<TableRow> rows;
     std::vector<uint16_t> widths;
 
 #pragma region Member Function Interface
@@ -36,7 +50,7 @@ private:
         }
         else if (widths[depth] < str.length())
             widths[depth] = str.length();
-        rows.back().push_back(str);
+        rows.back().data.push_back(str);
 
         _addRow(depth+1, args...);
     }
@@ -54,8 +68,8 @@ public:
 
         if (rows.empty()) return {};
 
-        for (int i = 0; i < rows[0].size(); ++i) {
-            std::string tmp = rows[0][i];
+        for (int i = 0; i < rows[0].data.size(); ++i) {
+            std::string tmp = rows[0].data[i];
             auto width = widths[i]+2;
             sum += width;
             util::fillRight(tmp, width);
@@ -67,8 +81,8 @@ public:
 
         for (std::size_t i = 1; i < rows.size(); ++i) {
             const auto& row = rows[i];
-            for (int col = 0; col < row.size(); ++col) {
-                std::string tmp = row[col];
+            for (int col = 0; col < row.data.size(); ++col) {
+                std::string tmp = row.data[col];
                 util::fillRight(tmp, widths[col]+2);
                 res += tmp;
             }
@@ -78,7 +92,7 @@ public:
         return res;
     }
 
-    [[nodiscard]] std::vector<std::vector<std::string>> getData() const {
+    [[nodiscard]] std::vector<TableRow> getData() const {
         return rows;
     }
 #pragma endregion
@@ -89,6 +103,10 @@ private:
 
     template<typename T>
     void addCell(T val) {
+        if (rows.empty()) {
+            rows.emplace_back();
+        }
+
         std::stringstream ss;
         ss << val;
         auto str = ss.str();
@@ -97,7 +115,7 @@ private:
         }
         else if (widths[cursor] < str.length())
             widths[cursor] = str.length();
-        rows.back().push_back(str);
+        rows.back().data.push_back(str);
         ++cursor;
     }
 
@@ -107,30 +125,26 @@ private:
     }
 public:
 
-    struct row{};
-
     template<typename T>
     PrettyTable& operator<<(T arg) {
-        if (rows.empty()) {
-            rows.emplace_back();
-        }
-        if constexpr(std::is_same_v<T, row>) {
-            newRow();
-        } else {
-            addCell(arg);
-        }
+        addCell(arg);
+        return *this;
+    }
 
+    PrettyTable& operator<<(util::row) {
+        newRow();
         return *this;
     }
 
     PrettyTable& operator<<(const PrettyTable& arg) {
-
+        for (const auto& row : arg.getData()) {
+            for (const auto& data : row.data) {
+                *this << data;
+            }
+            *this << std::row;
+        }
         return *this;
     }
 
 #pragma endregion
 };
-
-namespace std {
-    constexpr PrettyTable::row row;
-}
