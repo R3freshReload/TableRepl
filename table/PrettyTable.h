@@ -173,7 +173,7 @@ public:
 
         if (rows.empty()) return {};
 
-        for (int i = 0; i < rows[0].size(); ++i) {
+        /*for (int i = 0; i < rows[0].size(); ++i) {
             std::string tmp = (std::string)(rows[0][i]);
             auto width = widths[i]+2;
             util::fillRight(tmp, width);
@@ -181,9 +181,9 @@ public:
         }
         res += '\n';
         res += std::string(sum, '-');
-        res += '\n';
+        res += '\n';*/
 
-        for (std::size_t i = 1; i < rows.size(); ++i) {
+        for (std::size_t i = 0; i < rows.size(); ++i) {
             const auto& row = rows[i];
             for (int col = 0; col < row.size(); ++col) {
                 std::string tmp = (std::string)row[col];
@@ -198,6 +198,26 @@ public:
 
     [[nodiscard]] std::vector<TableRow> getData() const {
         return rows;
+    }
+
+    PrettyTable cut(std::size_t from, std::size_t to) {
+        if (from >= to) return {};
+
+        PrettyTable res;
+        for (std::size_t i = from; i < to; ++i) {
+            res << rows[i];
+        }
+        rows.erase(rows.begin() + from, rows.begin() + to);
+
+        return res;
+    }
+
+    void insert(const PrettyTable& table, std::size_t idx) {
+        rows.insert(rows.begin() + idx, table.begin(), table.end());
+    }
+
+    [[nodiscard]] std::size_t size() const {
+        return rows.size();
     }
 #pragma endregion
 
@@ -259,6 +279,12 @@ public:
         return rows[x];
     }
 
+    PrettyTable& operator=(const PrettyTable& rhs) {
+        this->rows = rhs.rows;
+        this->cursor = rhs.cursor;
+        return *this;
+    }
+
 #pragma region Set Operators
 
     PrettyTable operator-(const PrettyTable& rhs) const {
@@ -269,17 +295,17 @@ public:
         return res;
     }
 
-    PrettyTable operator+(const PrettyTable& rhs) const {
-        PrettyTable res(*this);
-        res << rhs;
-        return res;
-    }
-
     PrettyTable& operator-=(const PrettyTable& rhs) {
         auto torem = std::remove_if(rows.begin(), rows.end(),
                                     [&rhs](const TableRow& i) { return rhs.contains(i); });
         rows.erase(torem, rows.end());
         return *this;
+    }
+
+    PrettyTable operator+(const PrettyTable& rhs) const {
+        PrettyTable res(*this);
+        res << rhs;
+        return res;
     }
 
     PrettyTable& operator+=(const PrettyTable& rhs) {
@@ -300,11 +326,21 @@ public:
         return res;
     }
 
+    PrettyTable& operator&=(const PrettyTable& rhs) {
+        *this = *this & rhs;
+        return *this;
+    }
+
     PrettyTable operator^(const PrettyTable& rhs) const {
         PrettyTable res(*this);
         res += rhs;
         res -= rhs & *this;
         return res;
+    }
+
+    PrettyTable& operator^=(const PrettyTable& rhs) {
+        *this = *this ^ rhs;
+        return *this;
     }
 #pragma endregion
 
@@ -312,3 +348,9 @@ public:
         return std::any_of(rows.begin(), rows.end(), [&row](const TableRow& p){return p==row;});
     }
 };
+
+namespace {
+    std::ostream& operator<<(std::ostream& os, const PrettyTable& m) {
+        return os << m.str();
+    }
+}

@@ -59,5 +59,6 @@ namespace table  {
 }
 
 int main() {
-    table::runRepl();
+    main_test();
+    //table::runRepl();
 }
